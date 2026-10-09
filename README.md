@@ -1,6 +1,6 @@
 # Trading System
 
-A server-authoritative player-to-player trading system for Roblox, written in strictly typed Luau. It doesn't own any player data: it talks to your inventory and currency code through one adapter file, so it drops into an existing game without rewriting either side.
+A server-authoritative player-to-player trading system for Roblox, written in strictly typed Luau. It doesn't own any player data: it talks to your inventory and currency code through two small adapter files, so it drops into an existing game without rewriting either side.
 
 Works out of the box with [Roblox-Inventory-System](https://github.com/JMScripts1/Roblox-Inventory-System).
 
@@ -15,25 +15,31 @@ Works out of the box with [Roblox-Inventory-System](https://github.com/JMScripts
 - Any change to either offer clears both players' ready state, so nobody gets swapped out at the last second
 - A short confirm countdown after both players are ready
 - Everything is re-checked at the moment of the swap, and the swap is all-or-nothing
-- Both players' data is saved right after a trade, closing the rejoin rollback dupe
+- Both players' data is saved right after a trade, shrinking the window for rollback dupes
 
 ## Integrating it into your game
 
-Trading never reads or writes player data itself. Everything it needs goes through `TradeAdapter`:
+Trading never reads or writes player data itself. The server side goes through `TradeAdapter`:
 
 ```lua
-TradeAdapter.has(player, items)                  -- owns every item in the bundle
-TradeAdapter.fits(player, incoming, outgoing)    -- room for incoming once outgoing is gone
-TradeAdapter.apply(player, incoming, outgoing)   -- swap one side; only called after both pass
+TradeAdapter.exists(itemId)                      -- the item is defined in your game
+TradeAdapter.isTradable(itemId)                  -- false for items that should never change hands
+TradeAdapter.has(player, offer)                  -- owns every item and currency amount in the offer
+TradeAdapter.fits(player, incoming, outgoing)    -- room for everything incoming once outgoing is gone
+TradeAdapter.apply(player, incoming, outgoing)   -- swap one side; only called after both players pass
 TradeAdapter.save(player)                        -- force a save after the trade
-TradeAdapter.getItem(itemId)                     -- name, icon, rarity for the UI
 ```
 
-The default adapter targets Roblox-Inventory-System. To use your own inventory, rewrite those functions against it; nothing else changes.
+`apply` must not yield, and must not fail once `has` and `fits` have passed. That's what keeps the swap all-or-nothing.
+
+The client side goes through `ItemInfo`, which gives the UI an item's name, icon, and rarity.
+
+The default adapters target Roblox-Inventory-System. To use your own inventory, rewrite those two files against it; nothing else changes.
 
 | Module | What it controls |
 |---|---|
-| `TradeAdapter` | How trading talks to your inventory and currency |
+| `TradeAdapter` | How the server talks to your inventory and currency |
+| `ItemInfo` | How the UI looks up item names, icons, and rarities |
 | `Config` | Offer size, cooldowns, countdown length, tradable currencies |
 | `Theme` | UI colors, fonts, and corner radius |
 
@@ -64,7 +70,7 @@ Leaving, a timeout, or a failed final check cancels the trade, and nothing moves
 src/
   shared/      config, theme, types
   server/      TradeService, TradeAdapter
-  client/      TradeController, UI components
+  client/      TradeController, ItemInfo, UI components
 ```
 
 ## Running locally
