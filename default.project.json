@@ -1,0 +1,23 @@
+{
+	"name": "trading",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"TradeShared": {
+				"$path": "src/shared"
+			}
+		},
+		"ServerScriptService": {
+			"TradeServer": {
+				"$path": "src/server"
+			}
+		},
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"TradeClient": {
+					"$path": "src/client"
+				}
+			}
+		}
+	}
+}
